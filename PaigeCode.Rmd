@@ -9,4 +9,23 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Test
+
+## Load Data
+```{r}
+# load and separate by semicolon
+data <- read.csv("data.csv", sep=";")
+head(data)
+
+# remove enrolled
+library("tidyverse")
+dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
+```
+
+
+## Simple summary
+```{r}
+## Looks like a lot of integer values refering to different occupations etc. may need to use as.factor
+summary(dropout.data[-37])
+summary(as.factor(dropout.data$Target))
+```
+
