@@ -1,0 +1,12 @@
+---
+title: "Paige 474 Final Project"
+author: "Paige Cooper"
+date: "2025-05-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Test
