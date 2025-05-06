@@ -8,3 +8,94 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r}
+library("tidyverse")
+```
+
+## Load Data
+
+```{r}
+# load and separate by semicolon
+data <- read.csv("data.csv", sep=";")
+```
+
+## EDA
+
+```{r}
+library(skimr)
+```
+
+```{r}
+# remove enrolled
+dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
+```
+
+```{r}
+dropout.data$Target <- as.factor(dropout.data$Target)
+```
+
+```{r}
+skim(dropout.data)
+```
+
+## Tree Methods
+
+```{r}
+# Import library for creating tree models
+library(tree)
+```
+
+```{r}
+# Split data in training and test set
+train <- 1:2904
+test <- -train
+```
+
+#### Classification Tree
+
+```{r}
+tree.dropout <- tree(Target ~ ., data = dropout.data, subset = train)
+summary(tree.dropout)
+```
+
+```{r}
+plot(tree.dropout)
+text(tree.dropout, pretty = 0)
+```
+
+```{r}
+tree.pred <- predict(tree.dropout, dropout.data[test,], type = "class")
+table(tree.pred,dropout.data$Target[test])
+```
+
+```{r}
+(229+409)/726
+```
+
+```{r}
+cv.dropout <- cv.tree(tree.dropout, FUN = prune.misclass)
+```
+
+```{r}
+par(mfrow = c(1, 2))
+plot(cv.dropout$size, cv.dropout$dev, type = "b")
+plot(cv.dropout$k, cv.dropout$dev, type = "b")
+```
+
+```{r}
+which.min(cv.dropout$dev)
+```
+
+```{r}
+prune.dropout <- prune.misclass(tree.dropout, best = 7)
+plot(prune.dropout)
+text(prune.dropout, pretty = 0)
+```
+
+```{r}
+tree.pred <- predict(prune.dropout, dropout.data[test,], type = "class")
+table(tree.pred,dropout.data$Target[test])
+```
+
+#### Bagging
