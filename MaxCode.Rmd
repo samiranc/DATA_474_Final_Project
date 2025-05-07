@@ -32,7 +32,50 @@ dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
 ```
 
 ```{r}
+clean_names <- c(
+  "MaritalStatus",
+  "ApplicationMode",
+  "ApplicationOrder",
+  "Course",
+  "AttendanceTime", 
+  "PrevQualification",
+  "PrevQualificationGrade",
+  "Nationality",
+  "MotherQualification",
+  "FatherQualification",
+  "MotherOccupation",
+  "FatherOccupation",
+  "AdmissionGrade",
+  "Displaced",
+  "SpecialNeeds",
+  "Debtor",
+  "TuitionUpToDate",
+  "Gender",
+  "ScholarshipHolder",
+  "AgeAtEnrollment",
+  "InternationalStudent",
+  "Units1stCredited",
+  "Units1stEnrolled",
+  "Units1stEvaluated",
+  "Units1stApproved",
+  "Units1stGrade",
+  "Units1stWithoutEval",
+  "Units2ndCredited",
+  "Units2ndEnrolled",
+  "Units2ndEvaluated",
+  "Units2ndApproved",
+  "Units2ndGrade",
+  "Units2ndWithoutEval",
+  "UnemploymentRate",
+  "InflationRate",
+  "GDP",
+  "Target"
+)
+```
+
+```{r}
 dropout.data$Target <- as.factor(dropout.data$Target)
+colnames(dropout.data) <- clean_names
 ```
 
 ```{r}
@@ -45,6 +88,7 @@ skim(dropout.data)
 # Import library for creating tree models
 library(tree)
 library(randomForest)
+library(gbm)
 ```
 
 ```{r}
@@ -65,10 +109,12 @@ plot(tree.dropout)
 text(tree.dropout, pretty = 0)
 ```
 
+This plot shows us that the curricular unit predictors are important.
+
 ```{r}
 tree.pred <- predict(tree.dropout, dropout.data[test,], type = "class")
 table(tree.pred,dropout.data$Target[test])
-mean(tree.pred,dropout.data$Target[test])
+mean(tree.pred == dropout.data$Target[test])
 ```
 
 ```{r}
@@ -124,7 +170,37 @@ mean(yhat.rf == dropout.data$Target[test])
 ```
 
 ```{r}
-importance(rf.dropout)
+importance(rf.dropout)[order(importance(rf.dropout)[, "MeanDecreaseGini"], decreasing = TRUE), ]
+```
+
+```{r}
+varImpPlot(rf.dropout,n.var = 10, main = "Top 10 Important Variables")
+```
+
+```{r}
+gini <- importance(rf.dropout)[, "MeanDecreaseGini"]
+sorted.gini <- sort(gini, decreasing = T)
+top.gini <- sorted.gini[1:10]
+top.df <- data.frame(Predictor = names(top.gini), MeanDecreaseGini = unlist(top.gini))
+top.df$Predictor <- factor(top.df$Predictor, levels = top.df$Predictor[order(top.df$MeanDecreaseGini, decreasing = FALSE)])
+ggplot(top.df, aes(x = Predictor, y = MeanDecreaseGini)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip()
 ```
 
 #### Boosting
+
+```{r}
+set.seed(12904637)
+temp.dropout.data <- data.frame(dropout.data)
+temp.dropout.data$Target.bin <- ifelse(dropout.data$Target == "Graduate",1,0)
+boost.dropout <- gbm(Target.bin ~ . - Target, data = temp.dropout.data[train,], distribution = "bernoulli", n.trees = 5000, interaction.depth = 4)
+```
+
+```{r}
+yhat.boost <- predict(boost.dropout, newdata = temp.dropout.data[test,], n.trees = 5000)
+yhat.pred <- rep("Dropout", 726)
+yhat.pred[yhat.boost > 0.5] <- "Graduate"
+table(yhat.pred,temp.dropout.data$Target[test])
+mean(yhat.pred == temp.dropout.data$Target[test])
+```
