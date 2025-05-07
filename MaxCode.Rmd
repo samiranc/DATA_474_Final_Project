@@ -44,6 +44,7 @@ skim(dropout.data)
 ```{r}
 # Import library for creating tree models
 library(tree)
+library(randomForest)
 ```
 
 ```{r}
@@ -67,10 +68,7 @@ text(tree.dropout, pretty = 0)
 ```{r}
 tree.pred <- predict(tree.dropout, dropout.data[test,], type = "class")
 table(tree.pred,dropout.data$Target[test])
-```
-
-```{r}
-(229+409)/726
+mean(tree.pred,dropout.data$Target[test])
 ```
 
 ```{r}
@@ -96,6 +94,37 @@ text(prune.dropout, pretty = 0)
 ```{r}
 tree.pred <- predict(prune.dropout, dropout.data[test,], type = "class")
 table(tree.pred,dropout.data$Target[test])
+mean(tree.pred == dropout.data$Target[test])
 ```
 
-#### Bagging
+#### Bagging and Random Forest
+
+```{r}
+set.seed(748552025)
+bag.dropout <- randomForest(Target ~ ., data = dropout.data, subset = train, mtry = 36, importance = TRUE)
+bag.dropout
+```
+
+```{r}
+yhat.bag <- predict(bag.dropout, newdata = dropout.data[test,])
+table(yhat.bag,dropout.data$Target[test])
+mean(yhat.bag == dropout.data$Target[test])
+```
+
+```{r}
+set.seed(520265876)
+rf.dropout <- randomForest(Target ~ ., data = dropout.data, subset = train, mtry = 6, importance = TRUE) # For random forest set mtry = 6 instead of full 36 predictors
+rf.dropout
+```
+
+```{r}
+yhat.rf <- predict(rf.dropout, newdata = dropout.data[test,])
+table(yhat.rf,dropout.data$Target[test])
+mean(yhat.rf == dropout.data$Target[test])
+```
+
+```{r}
+importance(rf.dropout)
+```
+
+#### Boosting
