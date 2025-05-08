@@ -29,6 +29,8 @@ summary(dropout.data[-37])
 summary(as.factor(dropout.data$Target))
 ```
 ```{r}
+# clean names
+
 library(skimr)
 clean_names <- c(
   "MaritalStatus",
@@ -70,12 +72,13 @@ clean_names <- c(
   "Target"
 )
 
-
-
-
-dropout.data$Target <- as.factor(dropout.data$Target)
 colnames(dropout.data) <- clean_names
 
+```
+
+```{r}
+# establish factors
+dropout.data$Target <- as.factor(dropout.data$Target)
 dropout.data$MaritalStatus <- as.factor(dropout.data$MaritalStatus)
 dropout.data$ApplicationMode <- as.factor(dropout.data$ApplicationMode)
 dropout.data$Course <- as.factor(dropout.data$Course)
@@ -93,7 +96,11 @@ dropout.data$TuitionUpToDate <- as.factor(dropout.data$TuitionUpToDate)
 dropout.data$Gender <- as.factor(dropout.data$Gender)
 dropout.data$ScholarshipHolder <- as.factor(dropout.data$ScholarshipHolder)
 dropout.data$InternationalStudent <- as.factor(dropout.data$InternationalStudent)
+```
 
+
+```{r}
+# summary
 skim(dropout.data)
 ```
 
