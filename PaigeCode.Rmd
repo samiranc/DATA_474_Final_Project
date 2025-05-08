@@ -28,4 +28,111 @@ dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
 summary(dropout.data[-37])
 summary(as.factor(dropout.data$Target))
 ```
+```{r}
+library(skimr)
+clean_names <- c(
+  "MaritalStatus",
+  "ApplicationMode",
+  "ApplicationOrder",
+  "Course",
+  "AttendanceTime", 
+  "PrevQualification",
+  "PrevQualificationGrade",
+  "Nationality",
+  "MotherQualification",
+  "FatherQualification",
+  "MotherOccupation",
+  "FatherOccupation",
+  "AdmissionGrade",
+  "Displaced",
+  "SpecialNeeds",
+  "Debtor",
+  "TuitionUpToDate",
+  "Gender",
+  "ScholarshipHolder",
+  "AgeAtEnrollment",
+  "InternationalStudent",
+  "Units1stCredited",
+  "Units1stEnrolled",
+  "Units1stEvaluated",
+  "Units1stApproved",
+  "Units1stGrade",
+  "Units1stWithoutEval",
+  "Units2ndCredited",
+  "Units2ndEnrolled",
+  "Units2ndEvaluated",
+  "Units2ndApproved",
+  "Units2ndGrade",
+  "Units2ndWithoutEval",
+  "UnemploymentRate",
+  "InflationRate",
+  "GDP",
+  "Target"
+)
+
+
+
+
+dropout.data$Target <- as.factor(dropout.data$Target)
+colnames(dropout.data) <- clean_names
+
+dropout.data$MaritalStatus <- as.factor(dropout.data$MaritalStatus)
+dropout.data$ApplicationMode <- as.factor(dropout.data$ApplicationMode)
+dropout.data$Course <- as.factor(dropout.data$Course)
+dropout.data$AttendanceTime <- as.factor(dropout.data$AttendanceTime)
+dropout.data$PrevQualification <- as.factor(dropout.data$PrevQualification)
+dropout.data$Nationality <- as.factor(dropout.data$Nationality)
+dropout.data$MotherQualification <- as.factor(dropout.data$MotherQualification)
+dropout.data$FatherQualification <- as.factor(dropout.data$FatherQualification)
+dropout.data$MotherOccupation <- as.factor(dropout.data$MotherOccupation)
+dropout.data$FatherOccupation <- as.factor(dropout.data$FatherOccupation)
+dropout.data$Displaced <- as.factor(dropout.data$Displaced)
+dropout.data$SpecialNeeds <- as.factor(dropout.data$SpecialNeeds)
+dropout.data$Debtor <- as.factor(dropout.data$Debtor)
+dropout.data$TuitionUpToDate <- as.factor(dropout.data$TuitionUpToDate)
+dropout.data$Gender <- as.factor(dropout.data$Gender)
+dropout.data$ScholarshipHolder <- as.factor(dropout.data$ScholarshipHolder)
+dropout.data$InternationalStudent <- as.factor(dropout.data$InternationalStudent)
+
+skim(dropout.data)
+```
+
+
+## LDA 
+Can correctly predict Grad versus dropout by 87.3%.
+```{r}
+train <- 1:2904
+test <- 2905:3630
+
+
+library(MASS)
+
+# LDA based on only numerical predictors
+lda.fit <-lda(Target ~ ApplicationOrder + PrevQualificationGrade + AdmissionGrade + AgeAtEnrollment + Units1stCredited + Units1stEnrolled + Units1stEvaluated + Units1stApproved + Units1stGrade + Units1stWithoutEval + 	Units2ndCredited + Units2ndEnrolled + Units2ndEvaluated + Units2ndApproved + Units2ndGrade + Units2ndWithoutEval + UnemploymentRate + InflationRate + GDP, data = dropout.data, subset = train)
+
+# confusion matrix
+targett <- dropout.data$Target[test]
+lda.pred <- predict(lda.fit, dropout.data[test, ])
+table(lda.pred$class, targett)
+
+# correct percentage
+634/726
+
+```
+
+
+## QDA
+Performs slightly worse with 86.9% accuracy.
+```{r}
+# QDA based on only numerical predictors
+qda.fit <-qda(Target ~ ApplicationOrder + PrevQualificationGrade + AdmissionGrade + AgeAtEnrollment + Units1stCredited + Units1stEnrolled + Units1stEvaluated + Units1stApproved + Units1stGrade + Units1stWithoutEval + 	Units2ndCredited + Units2ndEnrolled + Units2ndEvaluated + Units2ndApproved + Units2ndGrade + Units2ndWithoutEval + UnemploymentRate + InflationRate + GDP, data = dropout.data, subset = train)
+
+# confusion matrix
+targett <- dropout.data$Target[test]
+qda.pred <- predict(qda.fit, dropout.data[test, ])
+table(qda.pred$class, targett)
+
+# correct percentage
+631/ 726
+```
 
