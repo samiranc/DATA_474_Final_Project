@@ -71,11 +71,39 @@ clean_names <- c(
   "GDP",
   "Target"
 )
+
+colnames(dropout.data) <- clean_names
 ```
 
 ```{r}
 dropout.data$Target <- as.factor(dropout.data$Target)
-colnames(dropout.data) <- clean_names
+dropout.data$Target <- as.factor(dropout.data$Target)
+dropout.data$MaritalStatus <- as.factor(dropout.data$MaritalStatus)
+dropout.data$ApplicationMode <- as.factor(dropout.data$ApplicationMode)
+dropout.data$Course <- as.factor(dropout.data$Course)
+dropout.data$AttendanceTime <- as.factor(dropout.data$AttendanceTime)
+dropout.data$PrevQualification <- as.factor(dropout.data$PrevQualification)
+dropout.data$Nationality <- as.factor(dropout.data$Nationality)
+dropout.data$MotherQualification <- as.factor(dropout.data$MotherQualification)
+dropout.data$FatherQualification <- as.factor(dropout.data$FatherQualification)
+dropout.data$MotherOccupation <- as.factor(dropout.data$MotherOccupation)
+dropout.data$FatherOccupation <- as.factor(dropout.data$FatherOccupation)
+dropout.data$Displaced <- as.factor(dropout.data$Displaced)
+dropout.data$SpecialNeeds <- as.factor(dropout.data$SpecialNeeds)
+dropout.data$Debtor <- as.factor(dropout.data$Debtor)
+dropout.data$TuitionUpToDate <- as.factor(dropout.data$TuitionUpToDate)
+dropout.data$Gender <- as.factor(dropout.data$Gender)
+dropout.data$ScholarshipHolder <- as.factor(dropout.data$ScholarshipHolder)
+dropout.data$InternationalStudent <- as.factor(dropout.data$InternationalStudent)
+```
+
+```{r}
+# Too many levels in these factors
+dropout.data <- dropout.data %>%
+  select(-MotherQualification,
+         -FatherQualification,
+         -MotherOccupation,
+         -FatherOccupation)
 ```
 
 ```{r}
@@ -147,7 +175,7 @@ mean(tree.pred == dropout.data$Target[test])
 
 ```{r}
 set.seed(748552025)
-bag.dropout <- randomForest(Target ~ ., data = dropout.data, subset = train, mtry = 36, importance = TRUE)
+bag.dropout <- randomForest(Target ~ ., data = dropout.data, subset = train, mtry = 32, importance = TRUE)
 bag.dropout
 ```
 
@@ -159,7 +187,7 @@ mean(yhat.bag == dropout.data$Target[test])
 
 ```{r}
 set.seed(520265876)
-rf.dropout <- randomForest(Target ~ ., data = dropout.data, subset = train, mtry = 6, importance = TRUE) # For random forest set mtry = 6 instead of full 36 predictors
+rf.dropout <- randomForest(Target ~ ., data = dropout.data, subset = train, mtry = 6, importance = TRUE) # For random forest set mtry = 6 instead of full 32 predictors
 rf.dropout
 ```
 
@@ -167,14 +195,6 @@ rf.dropout
 yhat.rf <- predict(rf.dropout, newdata = dropout.data[test,])
 table(yhat.rf,dropout.data$Target[test])
 mean(yhat.rf == dropout.data$Target[test])
-```
-
-```{r}
-importance(rf.dropout)[order(importance(rf.dropout)[, "MeanDecreaseGini"], decreasing = TRUE), ]
-```
-
-```{r}
-varImpPlot(rf.dropout,n.var = 10, main = "Top 10 Important Variables")
 ```
 
 ```{r}
