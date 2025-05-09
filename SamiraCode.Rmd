@@ -1,0 +1,142 @@
+---
+title: "DATA_474_Final"
+author: "Samira Nassi"
+date: "5/3/2025"
+output: pdf_document
+---
+```{r}
+# Uploading the college drop out dataset
+data_full <- read.csv("C:/Users/nassi/OneDrive/Documents/DATA_474/Data_Folder/data.csv", sep = ";")
+head(data_full)
+```
+
+```{r}
+# Removing enrolled, so that the target is binary
+library("tidyverse")
+dropout.data <- data_full %>% filter(Target %in% c("Dropout", "Graduate"))
+```
+
+```{r}
+# clean names
+
+library(skimr)
+clean_names <- c(
+  "MaritalStatus",
+  "ApplicationMode",
+  "ApplicationOrder",
+  "Course",
+  "AttendanceTime", 
+  "PrevQualification",
+  "PrevQualificationGrade",
+  "Nationality",
+  "MotherQualification",
+  "FatherQualification",
+  "MotherOccupation",
+  "FatherOccupation",
+  "AdmissionGrade",
+  "Displaced",
+  "SpecialNeeds",
+  "Debtor",
+  "TuitionUpToDate",
+  "Gender",
+  "ScholarshipHolder",
+  "AgeAtEnrollment",
+  "InternationalStudent",
+  "Units1stCredited",
+  "Units1stEnrolled",
+  "Units1stEvaluated",
+  "Units1stApproved",
+  "Units1stGrade",
+  "Units1stWithoutEval",
+  "Units2ndCredited",
+  "Units2ndEnrolled",
+  "Units2ndEvaluated",
+  "Units2ndApproved",
+  "Units2ndGrade",
+  "Units2ndWithoutEval",
+  "UnemploymentRate",
+  "InflationRate",
+  "GDP",
+  "Target"
+)
+
+colnames(dropout.data) <- clean_names
+```
+
+```{r}
+# establish factors
+dropout.data$Target <- as.factor(dropout.data$Target)
+dropout.data$MaritalStatus <- as.factor(dropout.data$MaritalStatus)
+dropout.data$ApplicationMode <- as.factor(dropout.data$ApplicationMode)
+dropout.data$Course <- as.factor(dropout.data$Course)
+dropout.data$AttendanceTime <- as.factor(dropout.data$AttendanceTime)
+dropout.data$PrevQualification <- as.factor(dropout.data$PrevQualification)
+dropout.data$Nationality <- as.factor(dropout.data$Nationality)
+dropout.data$MotherQualification <- as.factor(dropout.data$MotherQualification)
+dropout.data$FatherQualification <- as.factor(dropout.data$FatherQualification)
+dropout.data$MotherOccupation <- as.factor(dropout.data$MotherOccupation)
+dropout.data$FatherOccupation <- as.factor(dropout.data$FatherOccupation)
+dropout.data$Displaced <- as.factor(dropout.data$Displaced)
+dropout.data$SpecialNeeds <- as.factor(dropout.data$SpecialNeeds)
+dropout.data$Debtor <- as.factor(dropout.data$Debtor)
+dropout.data$TuitionUpToDate <- as.factor(dropout.data$TuitionUpToDate)
+dropout.data$Gender <- as.factor(dropout.data$Gender)
+dropout.data$ScholarshipHolder <- as.factor(dropout.data$ScholarshipHolder)
+dropout.data$InternationalStudent <- as.factor(dropout.data$InternationalStudent)
+head(dropout.data)
+```
+
+```{r}
+# Separating the features and the target
+X <- dropout.data[, -37]
+Y <- dropout.data[, 37]
+
+# Splitting the dataset (80-20)
+set.seed(123)
+train_index <- createDataPartition(Y, p = 0.8, list = FALSE)
+X_train <- X[train_index, ]
+X_test <- X[-train_index, ]
+Y_train <- Y[train_index]
+Y_test <- Y[-train_index]
+```
+
+```{r}
+# KNN
+library(caret)
+set.seed(123)
+knn_model <- train(Y_train ~ .,
+                   data = data.frame(X_train, Y_train),
+                   method = "knn",
+                   preProcess = c("center", "scale"), # This line scales my features
+                   tuneLength = 10, # Tries 10 different values for k
+                   trControl = trainControl(method = "cv", number = 5)) # Chose 5 fold cross validation because it is a good balance between bias and variance
+
+# From the model and the plot, we see that K = 11 produced 75.9% accuracy for the training dataset
+print(knn_model)
+plot(knn_model)
+best_k <- knn_model$bestTune$k
+
+Y_pred <- predict(knn_model, newdata = X_test)
+
+# From the confusion matrix, we see that with K = 11 the model correctly predicts 78.62% of the target variable in the test dataset
+conf_matrix <- confusionMatrix(Y_pred, Y_test)
+print(conf_matrix)
+```
+
+```{r}
+# Naive Bayes
+library(e1071)
+
+nb_model = train(Y_train ~ .,
+                 data = data.frame(X_train, Y_train),
+                 method = "naive_bayes",
+                 trControl = trainControl(method = "cv", number = 5)) # Chose 5 fold cross validation because it is a good balance between bias and variance
+print(nb_model)
+
+Y_pred2 <- predict(nb_model, newdata = X_test)
+
+# From the confusion matrix we see that the accuracy is 60.83% for the test dataset
+conf_matrix2 <- confusionMatrix(Y_pred2, Y_test)
+print(conf_matrix2)
+```
+
