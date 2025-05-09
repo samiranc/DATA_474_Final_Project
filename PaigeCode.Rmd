@@ -128,6 +128,28 @@ table(lda.pred$class, targett)
 ```
 
 
+## LDA with dummy variables
+Can correctly predict Grad versus dropout by 89.8% when you include dummy variables for 0-1 predictors.
+```{r}
+train <- 1:2904
+test <- 2905:3630
+
+
+# LDA based on only numerical predictors
+lda.fit <-lda(Target ~ ApplicationOrder + PrevQualificationGrade + AdmissionGrade + AgeAtEnrollment + Units1stCredited + Units1stEnrolled + Units1stEvaluated + Units1stApproved + Units1stGrade + Units1stWithoutEval + 	Units2ndCredited + Units2ndEnrolled + Units2ndEvaluated + Units2ndApproved + Units2ndGrade + Units2ndWithoutEval + UnemploymentRate + InflationRate + GDP + AttendanceTime + Displaced + SpecialNeeds + Gender + Debtor + TuitionUpToDate + ScholarshipHolder + InternationalStudent, data = dropout.data, subset = train)
+
+# confusion matrix
+targett <- dropout.data$Target[test]
+lda.pred <- predict(lda.fit, dropout.data[test, ])
+table(lda.pred$class, targett)
+
+# correct percentage
+(238+414)/726
+
+```
+
+
+
 ## QDA
 Performs slightly worse with 86.9% accuracy.
 ```{r}
@@ -143,3 +165,18 @@ table(qda.pred$class, targett)
 631/ 726
 ```
 
+
+## QDA w dummy variables
+Performs slightly worse than LDA with dummy variables with 87.6% accuracy. Better than both qda and lda with no dummy variables.
+```{r}
+# QDA based on only numerical predictors
+qda.fit <-qda(Target ~ ApplicationOrder + PrevQualificationGrade + AdmissionGrade + AgeAtEnrollment + Units1stCredited + Units1stEnrolled + Units1stEvaluated + Units1stApproved + Units1stGrade + Units1stWithoutEval + 	Units2ndCredited + Units2ndEnrolled + Units2ndEvaluated + Units2ndApproved + Units2ndGrade + Units2ndWithoutEval + UnemploymentRate + InflationRate + GDP + AttendanceTime + Displaced + SpecialNeeds + Gender + Debtor + TuitionUpToDate + ScholarshipHolder + InternationalStudent, data = dropout.data, subset = train)
+
+# confusion matrix
+targett <- dropout.data$Target[test]
+qda.pred <- predict(qda.fit, dropout.data[test, ])
+table(qda.pred$class, targett)
+
+# correct percentage
+(239 + 397)/ 726
+```
