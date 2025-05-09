@@ -1,0 +1,129 @@
+---
+title: "Data 474 final proj"
+author: "Mohith Vanukuri"
+date: "2025-05-07"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Load Data
+```{r}
+# load and separate by semicolon
+data <- read.csv("data474.csv", sep=";")
+head(data)
+
+# remove enrolled
+library("tidyverse")
+dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
+```
+
+
+```{r}
+#Here I'm splitting the data into training and test sets
+train <- 1:2904
+test <- 2905:3630
+```
+
+
+```{r}
+table(dropout.data$Target)
+```
+
+```{r}
+#did this to make sure model only predicts between Dropout and Graduate
+dropout.data <- dropout.data %>%
+  filter(Target %in% c("Dropout", "Graduate"))
+```
+
+```{r}
+dropout.data$Target <- factor(dropout.data$Target, levels = c("Graduate", "Dropout"))
+```
+
+
+
+```{r}
+# here im fitting Logistic Regression using only the numeric predictors
+logit.fit <- glm(Target ~ Application.order + Previous.qualification..grade. + Admission.grade + Age.at.enrollment +
+                   Curricular.units.1st.sem..credited. + Curricular.units.1st.sem..enrolled. + Curricular.units.1st.sem..evaluations. +
+                   Curricular.units.1st.sem..approved. + Curricular.units.1st.sem..grade. + Curricular.units.1st.sem..without.evaluations. +
+                   Curricular.units.2nd.sem..credited. + Curricular.units.2nd.sem..enrolled. + Curricular.units.2nd.sem..evaluations. +
+                   Curricular.units.2nd.sem..approved. + Curricular.units.2nd.sem..grade. + Curricular.units.2nd.sem..without.evaluations. +
+                   Unemployment.rate + Inflation.rate + GDP,
+                 data = dropout.data,
+                 family = binomial,
+                 subset = train)
+
+
+```
+
+
+```{r}
+#Predicting dropout probabilities on the test set, and this gives predicted probabilities between 0 and 1. We're also converting probabilities to class predictions. Threshold = 0.5: If prob > 0.5 then Dropout; else Graduate
+logit.probs <- predict(logit.fit, newdata = dropout.data[test, ], type = "response")
+logit.pred <- ifelse(logit.probs > 0.5, "Dropout", "Graduate")
+logit.pred <- factor(logit.pred, levels = c("Graduate", "Dropout"))
+
+# here I've added a confusion matrix to compare predictions vs actual values
+table(Predicted = logit.pred, Actual = dropout.data$Target[test])
+mean(logit.pred == dropout.data$Target[test])
+
+```
+
+```{r}
+summary(logit.fit)         # shows estimates and p-values
+
+exp(coef(logit.fit))       # higher = increases odds of dropout, lower = decreases odds
+```
+
+
+```{r}
+#odds ratio plot
+library(ggplot2)
+library(broom)
+
+#fixing model coefficients
+logit.tidy <- broom::tidy(logit.fit) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  filter(term != "(Intercept)")
+
+
+ggplot(logit.tidy, aes(x = reorder(term, odds_ratio), y = odds_ratio)) +
+  geom_point() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+  coord_flip() +
+  labs(
+    title = "Odds Ratios from Logistic Regression",
+    x = "Predictor",
+    y = "Odds Ratio"
+  ) +
+  theme_minimal()
+
+```
+
+
+
+```{r}
+library(pROC)
+
+# ROC curve and AUC
+roc_obj <- roc(response = dropout.data$Target[test],
+               predictor = logit.probs,
+               levels = c("Graduate", "Dropout"))
+
+plot(roc_obj, main = "ROC Curve - Logistic Regression", col = "blue")
+abline(a = 0, b = 1, lty = 2, col = "gray")  
+
+#AUC(Area Under the Curve)
+auc(roc_obj)
+
+```
+
+
+
+The logistic regression model performed exceptionally well in predicting student dropout, achieving an accuracy of 88.7% on the test set and an AUC of 0.9459, showing us pretty solid discriminative ability. Out of 726 test cases, the model correctly classified 400 graduates and 244 dropouts. The confusion matrix shows a strong balance between sensitivity and specificity, with little false positives and false negatives. As we can see in the second figure the ROC curve is closely hugging the top-left corner, and this visually reinforces the model’s strong predictive power. The odds ratio analysis revealed that higher numbers of approved curricular units in both the first and second semesters significantly reduced dropout risk, while a higher number of enrolled or credited units without corresponding approvals increased the likelihood of dropping out. Overall, the model not only provides accurate predictions but also offers interpretable insights into which academic indicators are most associated with student success or risk.
+
+
