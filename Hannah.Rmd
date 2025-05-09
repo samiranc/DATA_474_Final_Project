@@ -1,0 +1,170 @@
+---
+title: "DATA 474 final"
+output:
+  pdf_document: Hannah 
+  html_document: default
+date: "2025-05-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load and separate by semicolon
+data <- read.csv("~/Desktop/data.csv", sep = ";")
+
+```
+
+```{r}
+
+library(tidyverse)
+dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
+```
+
+```{r}
+clean_names <- c(
+  "MaritalStatus",
+  "ApplicationMode",
+  "ApplicationOrder",
+  "Course",
+  "AttendanceTime", 
+  "PrevQualification",
+  "PrevQualificationGrade",
+  "Nationality",
+  "MotherQualification",
+  "FatherQualification",
+  "MotherOccupation",
+  "FatherOccupation",
+  "AdmissionGrade",
+  "Displaced",
+  "SpecialNeeds",
+  "Debtor",
+  "TuitionUpToDate",
+  "Gender",
+  "ScholarshipHolder",
+  "AgeAtEnrollment",
+  "InternationalStudent",
+  "Units1stCredited",
+  "Units1stEnrolled",
+  "Units1stEvaluated",
+  "Units1stApproved",
+  "Units1stGrade",
+  "Units1stWithoutEval",
+  "Units2ndCredited",
+  "Units2ndEnrolled",
+  "Units2ndEvaluated",
+  "Units2ndApproved",
+  "Units2ndGrade",
+  "Units2ndWithoutEval",
+  "UnemploymentRate",
+  "InflationRate",
+  "GDP",
+  "Target"
+)
+
+```
+
+
+```{r}
+dropout.data$Target <- as.factor(dropout.data$Target)
+colnames(dropout.data) <- clean_names
+```
+
+```{r}
+library(skimr)
+skim(dropout.data)
+```
+
+```{r}
+
+
+library(dplyr)
+library(glmnet)
+
+dropout.data <- dropout.data %>%
+  mutate(TargetNum = ifelse(Target=="Dropout", 1, 0))
+x_train <- model.matrix(TargetNum ~ . - Target, data = train)[,-1]
+y_train <- train$TargetNum
+x_test  <- model.matrix(TargetNum ~ . - Target, data = test)[,-1]
+y_test  <- test$TargetNum
+
+```
+
+
+```{r}
+# Best subset
+
+library(leaps)
+set.seed(614)
+regfit <- regsubsets(TargetNum ~ . - Target, data = train, nvmax = 10)
+regsum <- summary(regfit)
+
+# 4. Plot 
+plot(regsum$bic, type = "b",
+     xlab = "Number of predictors", ylab = "Test MSE")
+best_size <- which.min(regsum$bic)
+cat("Best subset siz:", best_size, "\n")
+
+# 5. Extract coefficients of the best model
+best_coef <- coef(regfit, best_size)
+best_coef
+
+# Predict on the test set
+pred_sub <- test_mat[, names(best_coef)] %*% best_coef
+
+# test‐set MSE
+mse_sub <- mean((test$TargetNum - pred_sub)^2)
+cat("Subset test MSE:", mse_sub, "\n")
+
+
+```
+
+```{r}
+#RIDGE REGRESSION
+
+grid <- 10^seq(10, -2, length=100)
+cv_ridge <- cv.glmnet(x_train, y_train, alpha=0, lambda=grid)
+best_ridge <- cv_ridge$lambda.min
+cat("Best λ for ridge:", best_ridge, "\n")
+
+ridge_pred <- predict(cv_ridge, s = best_ridge, newx = x_test)
+cat("Ridge test MSE:", mean((y_test - ridge_pred)^2), "\n")
+print(coef(cv_ridge, s = best_ridge))
+plot(cv_ridge)
+
+```
+
+```{r}
+#LASSO REGRESSION
+
+cv_lasso <- cv.glmnet(x_train, y_train, alpha=1)
+best_lasso <- cv_lasso$lambda.min
+cat("Best λ for lasso:", best_lasso, "\n")
+
+lasso_pred <- predict(cv_lasso, s = best_lasso, newx = x_test)
+cat("Lasso test MSE:", mean((y_test - lasso_pred)^2), "\n")
+print(coef(cv_lasso, s = best_lasso))
+plot(cv_lasso)
+
+```
+
+
+```{r}
+library(pls)
+train_pcr <- data.frame(TargetNum = y_train, x_train)
+
+pcr_fit <- pcr(
+  TargetNum ~ .,
+  data = train_pcr,
+  scale = TRUE,
+  validation = "CV"  # 10-fold cross-validation
+)
+
+summary(pcr_fit)
+
+# Plot 
+validationplot(pcr_fit, val.type = "MSEP")
+
+
+```
