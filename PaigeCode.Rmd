@@ -264,3 +264,45 @@ table(qda.pred$class, targett)
 # correct percentage
 (239 + 397)/ 726
 ```
+
+
+
+## Testing Logistic - Look to see if we want to change logistic model. Now 90.9% accurate
+```{r}
+data <- read.csv("data.csv", sep=";")
+head(data)
+
+# remove enrolled
+library("tidyverse")
+dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
+
+train <- 1:2904
+test <- 2905:3630
+
+
+dropout.data$Target <- factor(dropout.data$Target, levels = c("Graduate", "Dropout"))
+
+logit.fit <- glm(Target ~ Application.order + Previous.qualification..grade. + Admission.grade + Age.at.enrollment +
+                   Curricular.units.1st.sem..credited. + Curricular.units.1st.sem..enrolled. + Curricular.units.1st.sem..evaluations. +
+                   Curricular.units.1st.sem..approved. + Curricular.units.1st.sem..grade. + Curricular.units.1st.sem..without.evaluations. +
+                   Curricular.units.2nd.sem..credited. + Curricular.units.2nd.sem..enrolled. + Curricular.units.2nd.sem..evaluations. +
+                   Curricular.units.2nd.sem..approved. + Curricular.units.2nd.sem..grade. + Curricular.units.2nd.sem..without.evaluations. +
+                   Unemployment.rate + Inflation.rate + GDP + as.factor(Daytime.evening.attendance.) + as.factor(Displaced) + as.factor(Educational.special.needs) + as.factor(Gender) + as.factor(Debtor) + as.factor(Tuition.fees.up.to.date) + as.factor(Scholarship.holder) + as.factor(International),
+                 data = dropout.data,
+                 family = binomial,
+                 subset = train)
+
+#Predicting dropout probabilities on the test set, and this gives predicted probabilities between 0 and 1. We're also converting probabilities to class predictions. Threshold = 0.5: If prob > 0.5 then Dropout; else Graduate
+logit.probs <- predict(logit.fit, newdata = dropout.data[test, ], type = "response")
+logit.pred <- ifelse(logit.probs > 0.5, "Dropout", "Graduate")
+logit.pred <- factor(logit.pred, levels = c("Graduate", "Dropout"))
+
+# here I've added a confusion matrix to compare predictions vs actual values
+table(Predicted = logit.pred, Actual = dropout.data$Target[test])
+mean(logit.pred == dropout.data$Target[test])
+
+summary(logit.fit)         # shows estimates and p-values
+
+exp(coef(logit.fit)) 
+```
+
