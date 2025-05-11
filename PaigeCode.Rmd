@@ -16,9 +16,26 @@ knitr::opts_chunk$set(echo = TRUE)
 data <- read.csv("data.csv", sep=";")
 head(data)
 
+
 # remove enrolled
 library("tidyverse")
 dropout.data <- data %>% filter(Target %in% c("Dropout", "Graduate" ))
+```
+
+```{r}
+# How many graduate, enrolled, dropout
+summary(as.factor(data$Target))
+
+#Distribution of Target
+
+library(ggplot2)
+library(RColorBrewer)
+ggplot(data, aes(x = Target, fill = Target)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Paired") +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+ labs(title = "Distribution of College Result (Target Variable)", x = "Result (Target)", y = "Count") +
+  theme_minimal()
 ```
 
 
@@ -105,6 +122,71 @@ skim(dropout.data)
 ```
 
 
+## categorical plots
+```{r}
+# Gender
+ggplot(dropout.data, aes(x = Gender, fill = Target)) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette = "Set1") +
+  geom_text(stat = "count", aes(label = ..count..),position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Dropout vs Graduate by Gender",
+       x = "Gender", y = "Count") +
+  scale_x_discrete(label = c("Female", "Male")) + 
+  theme_minimal()
+
+# Attendance Time
+ggplot(dropout.data, aes(x = AttendanceTime, fill = Target)) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette = "Set1") +
+  geom_text(stat = "count", aes(label = ..count..),position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Dropout vs Graduate by Attendance Time",
+       x = "Attendance Time", y = "Count") +
+  scale_x_discrete(label = c("Evening", "Daytime")) + 
+  theme_minimal()
+
+# Fees Up to Date
+ggplot(dropout.data, aes(x = TuitionUpToDate, fill = Target)) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette = "Set1") +
+  geom_text(stat = "count", aes(label = ..count..),position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Dropout vs Graduate by Tuition Fees Up to Date",
+       x = "Tuition Fees Up to Date", y = "Count") +
+  scale_x_discrete(label = c("Not Up to Date", "Up to Date")) + 
+  theme_minimal()
+
+
+# Scholarship Holder
+ggplot(dropout.data, aes(x = ScholarshipHolder, fill = Target)) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette = "Set1") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Dropout vs Graduate by Scholarship Holder",
+       x = "Scholarship Holder", y = "Count") +
+  scale_x_discrete(label = c("No Scholarship", "Scholarship")) + 
+  theme_minimal()
+```
+
+
+## numeric plots
+```{r}
+# Age
+ggplot(dropout.data, aes(x = Target, y = AgeAtEnrollment, fill = Target)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Age at Enrollment by Target",
+       y = "Age", x = "Target") +
+  theme_minimal()
+
+# Age
+ggplot(dropout.data, aes(x = Target, y = AdmissionGrade, fill = Target)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Admission Grade by Target",
+       y = "Admission Grade", x = "Target") +
+  theme_minimal()
+```
+
+
 ## LDA 
 Can correctly predict Grad versus dropout by 87.3%.
 ```{r}
@@ -135,7 +217,7 @@ train <- 1:2904
 test <- 2905:3630
 
 
-# LDA based on only numerical predictors
+# LDA 
 lda.fit <-lda(Target ~ ApplicationOrder + PrevQualificationGrade + AdmissionGrade + AgeAtEnrollment + Units1stCredited + Units1stEnrolled + Units1stEvaluated + Units1stApproved + Units1stGrade + Units1stWithoutEval + 	Units2ndCredited + Units2ndEnrolled + Units2ndEvaluated + Units2ndApproved + Units2ndGrade + Units2ndWithoutEval + UnemploymentRate + InflationRate + GDP + AttendanceTime + Displaced + SpecialNeeds + Gender + Debtor + TuitionUpToDate + ScholarshipHolder + InternationalStudent, data = dropout.data, subset = train)
 
 # confusion matrix
@@ -145,6 +227,8 @@ table(lda.pred$class, targett)
 
 # correct percentage
 (238+414)/726
+
+lda.fit
 
 ```
 
