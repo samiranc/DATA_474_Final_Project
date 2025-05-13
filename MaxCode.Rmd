@@ -205,6 +205,7 @@ top.df <- data.frame(Predictor = names(top.gini), MeanDecreaseGini = unlist(top.
 top.df$Predictor <- factor(top.df$Predictor, levels = top.df$Predictor[order(top.df$MeanDecreaseGini, decreasing = FALSE)])
 ggplot(top.df, aes(x = Predictor, y = MeanDecreaseGini)) + 
   geom_bar(stat = "identity") + 
+  ggtitle("Top 10 Important Predictors") +
   coord_flip()
 ```
 
@@ -223,4 +224,57 @@ yhat.pred <- rep("Dropout", 726)
 yhat.pred[yhat.boost > 0.5] <- "Graduate"
 table(yhat.pred,temp.dropout.data$Target[test])
 mean(yhat.pred == temp.dropout.data$Target[test])
+```
+
+#### Testing
+
+```{r}
+set.seed(82321152)
+test.df <- as.data.frame(lapply(dropout.data[test,], function(col) sample(col, 50000, replace = TRUE)))
+```
+
+```{r}
+test.rf <- predict(rf.dropout, newdata = test.df)
+```
+
+```{r}
+test.table1 <- table(test.df$Units2ndApproved,test.rf)
+test.table1.df <- as.data.frame(test.table1)
+test.table1.df <- test.table1.df %>% 
+  pivot_wider(names_from = test.rf, values_from = Freq)
+test.table1.df$ratio <- test.table1.df$Graduate/(test.table1.df$Graduate+test.table1.df$Dropout)
+
+test.table2 <- table(test.df$Units1stApproved,test.rf)
+test.table2.df <- as.data.frame(test.table2)
+test.table2.df <- test.table2.df %>% 
+  pivot_wider(names_from = test.rf, values_from = Freq)
+test.table2.df$ratio <- test.table2.df$Graduate/(test.table2.df$Graduate+test.table2.df$Dropout)
+
+test.table3 <- table(test.df$Units2ndGrade,test.rf)
+test.table3.df <- as.data.frame(test.table3)
+test.table3.df <- test.table3.df %>% 
+  pivot_wider(names_from = test.rf, values_from = Freq)
+test.table3.df$ratio <- test.table3.df$Graduate/(test.table3.df$Graduate+test.table3.df$Dropout)
+
+test.table4 <- table(test.df$Units1stGrade,test.rf)
+test.table4.df <- as.data.frame(test.table4)
+test.table4.df <- test.table4.df %>% 
+  pivot_wider(names_from = test.rf, values_from = Freq)
+test.table4.df$ratio <- test.table4.df$Graduate/(test.table4.df$Graduate+test.table4.df$Dropout)
+```
+
+```{r}
+library(patchwork)
+```
+
+```{r}
+p1 <- ggplot(test.table1.df, aes(x = Var1,y = ratio)) +
+  geom_point()
+p2 <- ggplot(test.table2.df, aes(x = Var1,y = ratio)) +
+  geom_point()
+p3 <- ggplot(test.table3.df, aes(x = Var1,y = ratio)) +
+  geom_point()
+p4 <- ggplot(test.table4.df, aes(x = Var1,y = ratio)) +
+  geom_point()
+p4
 ```
