@@ -249,18 +249,6 @@ test.table2.df <- as.data.frame(test.table2)
 test.table2.df <- test.table2.df %>% 
   pivot_wider(names_from = test.rf, values_from = Freq)
 test.table2.df$ratio <- test.table2.df$Graduate/(test.table2.df$Graduate+test.table2.df$Dropout)
-
-test.table3 <- table(test.df$Units2ndGrade,test.rf)
-test.table3.df <- as.data.frame(test.table3)
-test.table3.df <- test.table3.df %>% 
-  pivot_wider(names_from = test.rf, values_from = Freq)
-test.table3.df$ratio <- test.table3.df$Graduate/(test.table3.df$Graduate+test.table3.df$Dropout)
-
-test.table4 <- table(test.df$Units1stGrade,test.rf)
-test.table4.df <- as.data.frame(test.table4)
-test.table4.df <- test.table4.df %>% 
-  pivot_wider(names_from = test.rf, values_from = Freq)
-test.table4.df$ratio <- test.table4.df$Graduate/(test.table4.df$Graduate+test.table4.df$Dropout)
 ```
 
 ```{r}
@@ -272,9 +260,5 @@ p1 <- ggplot(test.table1.df, aes(x = Var1,y = ratio)) +
   geom_point()
 p2 <- ggplot(test.table2.df, aes(x = Var1,y = ratio)) +
   geom_point()
-p3 <- ggplot(test.table3.df, aes(x = Var1,y = ratio)) +
-  geom_point()
-p4 <- ggplot(test.table4.df, aes(x = Var1,y = ratio)) +
-  geom_point()
-p4
+p1 + p2
 ```
